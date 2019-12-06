@@ -17,6 +17,16 @@ LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
 #define GROUND_RIGHT 7
 #define GROUND_LEFT 8
 
+//game speed value for each difficulty
+#define EASY_GAME_SPEED 200
+#define MEDIUM_GAME_SPEED 100
+#define HARD_GAME_SPEED 50
+
+//terrain generation speed value for each difficulty
+#define EASY_GENERATION_SPEED 800
+#define MEDIUM_GENERATION_SPEED 600
+#define HARD_GENERATION_SPEED 400
+
 //character's possible statuses
 const static int STOPPED = 0;
 const static int RUNNING = 1;
@@ -28,13 +38,12 @@ const static int JUMPING_FALLING = 4;
 const int runSpeed = 400;
 
 //time duration of a jump
-const int jumpSpeed = 200;
-
+int jumpSpeed = EASY_GAME_SPEED;
 //time between each game frame
-const int gameSpeed = 100;
+int gameSpeed = EASY_GAME_SPEED;
 
 //minimum time between each new generation of a terrain
-const int terrainGenerationSpeed = 1000;
+int terrainGenerationSpeed = EASY_GENERATION_SPEED;
 
 //variable containing the time in millisec. of the last update
 unsigned long lastTime;
@@ -69,8 +78,8 @@ boolean playing;
 void initializeGraphics(){
   
   /* Each byte of this array is a piece of an LCD cell.
-   * 8 bytes represent the entire cell.
-   * Generated using this handy tool: https://maxpromer.github.io/LCD-Character-Creator/
+   * 8 bytes represent the entire 5x8 cell
+   * Generated using this tool: https://maxpromer.github.io/LCD-Character-Creator/
    */
   static byte graphics[] = {
     // Run position 1
@@ -144,7 +153,7 @@ void initializeGraphics(){
     B11000,
     B11000,
     B11000,
-    B11000
+    B11000,
   };
     
   int i;
@@ -177,7 +186,7 @@ void setup() {
   //draw the character
   lcd.write(byte(SPRITE_RUN1));
 
-  //inizializations
+  //initializations
   lastTime = millis();
   lastGenerationTime = millis();
   lastAdvanceTime = millis();
@@ -328,7 +337,7 @@ int generateTerrain(){
 //function that shifts both the terrain boards by 1 position to left
 void advanceTerrain(int* terrain, int newTerrain){
   for (int i = 0; i < TERRAIN_WIDTH; i++) {
-    //if we are in the last position, add the new terrain and add a border, else shift 
+    //if we are in the last position, add the new terrain, else shift 
     terrain[i] = (i == TERRAIN_WIDTH - 1)? newTerrain : terrain[i+1];
   }
 
@@ -414,15 +423,68 @@ void checkIfIsGameOver(){
   }
 }
 
+void printGameOver(){
+  delay(500);
+  lcd.clear();
+  lcd.print("Game over!");
+  lcd.setCursor(0,1);
+  lcd.print("Score: ");
+  lcd.print(score);
+}
+
+//keeps track of the last reset time
+unsigned long previousMillis = 0;
+
+//used to write only once to the LCD when game over is reached
+boolean alreadyPrintedGameOver = false;
+
+//called when the game has been restarted
+void restartTheGame(){
+  //clear the screen
+  lcd.clear();
+
+  //draw the character
+  lcd.write(byte(SPRITE_RUN1));
+
+  //restores the graphics
+  initializeGraphics();
+  
+  //initializations
+  previousMillis = millis();
+  lastTime = millis() - previousMillis;
+  lastGenerationTime = millis()- previousMillis;
+  lastAdvanceTime = millis()- previousMillis;
+  gameStatus =  STOPPED;
+  isOnTheLowerBoard = true;
+  isOnTheUpperBoard = false;
+  playing = true;
+  alreadyPrintedGameOver = false;
+  score = 0;
+  gameSpeed = EASY_GAME_SPEED;
+  jumpSpeed = EASY_GAME_SPEED;
+  terrainGenerationSpeed = EASY_GENERATION_SPEED;
+}
+
 void loop() {
 
-  //game over
-  if(!playing) return;
-  
   //read the intensity of the sound
   int soundValue = digitalRead(SOUND_PIN);
-  //debug
-  //Serial.println(soundValue);
+  
+  //game over condition
+  if(!playing) {
+    if(!alreadyPrintedGameOver){
+      printGameOver();
+      alreadyPrintedGameOver = true;
+      delay(1000);
+      return;
+    }
+    else{
+      if(soundValue == 1){
+        restartTheGame();
+      }
+      return;
+    }
+  }
 
   //manage the run and jump animations of the character according to the recorded sound
   if(soundValue == 1){
@@ -441,7 +503,19 @@ void loop() {
   }
 
   //score updating
-  score = millis()/1000;
+  score = (millis()-previousMillis)/1000;
+  if(score == 20){
+    //difficulty shifts to medium
+    gameSpeed = MEDIUM_GAME_SPEED;
+    jumpSpeed = MEDIUM_GAME_SPEED;
+    terrainGenerationSpeed = MEDIUM_GENERATION_SPEED;
+  }
+  else if (score == 50){
+    //difficulty shifts to hard
+    gameSpeed = HARD_GAME_SPEED;
+    jumpSpeed = HARD_GAME_SPEED;
+    terrainGenerationSpeed = HARD_GENERATION_SPEED;
+  }
   updateScore();
   checkIfIsGameOver();
 }
