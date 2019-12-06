@@ -197,9 +197,13 @@ void setup() {
   score = millis()/1000;
 }
 
-
-//update the character's sprite
 void updateChar(){
+  /*
+ * this function updates 
+ * the character's sprite
+ * periodically, giving
+ * the "running" effect
+ */
   if (gameStatus == RUNNING ){
     lcd.setCursor(1,1);
     lcd.write(byte(SPRITE_RUN1));
@@ -213,9 +217,23 @@ void updateChar(){
   lastTime = millis();
 }
 
-boolean isContinuingJumping = false;
 
+boolean isContinuingJumping = false;
+/*
+ * since the sound sensor isn't too
+ * precise, if the sound is recorded
+ * even once within a brief timelapse,
+ * this code mantains the character on 
+ * the upper part of the board. The
+ * boolean allows to keep track of that.
+ */
 void updateCharacterWhileJumping(){
+  /*
+   * this function decides which animation
+   * to perform basing on the state of the
+   * character when it is on the upper part
+   * of the board
+   */
     if(gameStatus == STOPPED || gameStatus == RUNNING){
       startJumpingUpAnimation();
     }
@@ -238,6 +256,12 @@ void updateCharacterWhileJumping(){
 }
 
 void updateCharacterWhileGrounded(){
+  /*
+   * this function decides which animation
+   * to perform basing on the state of the
+   * character when it is on the lower part
+   * of the board
+   */
     if(gameStatus == STOPPED){
       unsigned long currentMillis = millis();
       if(currentMillis-lastTime >= runSpeed){
@@ -274,6 +298,7 @@ void updateCharacterWhileGrounded(){
     }
 }
 
+//starts the jump animation
 void startJumpingUpAnimation(){
   lastTime = millis();
   gameStatus = JUMPING_MIDDLE;
@@ -285,6 +310,7 @@ void startJumpingUpAnimation(){
   lcd.write(byte(SPRITE_LOWER_JUMP));
 }
 
+//keeps the character on air
 void startJumpingAnimation(){
   lastTime = millis();
   gameStatus = JUMPING_HIGH;
@@ -296,6 +322,7 @@ void startJumpingAnimation(){
   lcd.write(byte(SPRITE_JUMP));
 }
 
+//makes the character fall 
 void endJumpingAnimation(){
   lastTime = millis();
   gameStatus = JUMPING_FALLING;
@@ -307,6 +334,7 @@ void endJumpingAnimation(){
   lcd.write(byte(SPRITE_LOWER_JUMP));
 }
 
+//restores the running state of the character
 void resetRunning(){
   lastTime = millis();
   isOnTheLowerBoard = true;
@@ -318,7 +346,7 @@ void resetRunning(){
   lcd.write(byte(SPRITE_RUN1));
 }
 
-
+//function that randomly generates a new terrain 
 int generateTerrain(){
   unsigned long currentTime = millis();
   if(currentTime - lastGenerationTime >= terrainGenerationSpeed){
@@ -334,7 +362,7 @@ int generateTerrain(){
 }
 
 
-//function that shifts both the terrain boards by 1 position to left
+//function that shifts both the terrain boards by 1 position to the left
 void advanceTerrain(int* terrain, int newTerrain){
   for (int i = 0; i < TERRAIN_WIDTH; i++) {
     //if we are in the last position, add the new terrain, else shift 
