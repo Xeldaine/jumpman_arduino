@@ -68,11 +68,21 @@ static int terrainLower[TERRAIN_WIDTH];
 //default sound sensor pin
 const int SOUND_PIN = 13;
 
+//default buzzer pin
+const int BUZZER_PIN = 10;
+
 //score
 int score;
 
 //true if is not game over
 boolean playing;
+
+//game over track constants
+const int GAME_OVER_TRACK_LENGTH = 3;
+int gameOverTrack[] = {1245,622,311};
+int gameOverTrackTempo[] = {500, 500, 500};
+int gameOverTrackPauses[] = {200, 200, 200};
+
 
 //method for initializing the game graphics
 void initializeGraphics(){
@@ -174,6 +184,9 @@ void setup() {
   //set up the sound sensor input pin
   pinMode(SOUND_PIN, INPUT);
 
+  //set up the buzzer output pin
+  pinMode(BUZZER_PIN,OUTPUT);
+
   //define the custom chars and prepare the screen
   initializeGraphics();
   
@@ -223,7 +236,7 @@ boolean isContinuingJumping = false;
  * since the sound sensor isn't too
  * precise, if the sound is recorded
  * even once within a brief timelapse,
- * this code mantains the character on 
+ * this code keeps the character on 
  * the upper part of the board. The
  * boolean allows to keep track of that.
  */
@@ -460,6 +473,13 @@ void printGameOver(){
   lcd.print(score);
 }
 
+void startGameOverTrack(){
+  for(int i=0; i < GAME_OVER_TRACK_LENGTH; i++){
+    tone(BUZZER_PIN, gameOverTrack[i], gameOverTrackTempo[i]);
+    delay(gameOverTrackPauses[i]);
+  }
+}
+
 //keeps track of the last reset time
 unsigned long previousMillis = 0;
 
@@ -503,7 +523,8 @@ void loop() {
     if(!alreadyPrintedGameOver){
       printGameOver();
       alreadyPrintedGameOver = true;
-      delay(1000);
+      startGameOverTrack();
+      delay(1000); //used to avoid that previous sound activates the sensor
       return;
     }
     else{
